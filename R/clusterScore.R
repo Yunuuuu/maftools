@@ -34,15 +34,20 @@ parse_prot = function(dat, AACol, gl, m, calBg = FALSE, nBg){
   all.prot.dat = all.prot.dat[!conv == 'NULL']
 
   #If conversions are in HGVSp_long (default HGVSp) format, we will remove strings Ter followed by anything (e.g; p.Asn1986GlnfsTer13)
-  pos = gsub(pattern = 'Ter.*', replacement = '',x = all.prot.dat$conv)
+  # pos = gsub(pattern = 'Ter.*', replacement = '',x = all.prot.dat$conv)
 
-  #Following parsing takes care of most of HGVSp_short and HGVSp_long format
-  pos = gsub(pattern = '[[:alpha:]]', replacement = '', x = pos)
-  pos = gsub(pattern = '\\*$', replacement = '', x = pos) #Remove * if nonsense mutation ends with *
-  pos = gsub(pattern = '^\\*', replacement = '', x = pos) #Remove * if nonsense mutation starts with *
-  pos = gsub(pattern = '\\*.*', replacement = '', x = pos) #Remove * followed by position e.g, p.C229Lfs*18
+  # Following parsing takes care of most of HGVSp_short and HGVSp_long format
+  # pos = gsub(pattern = '[[:alpha:]]', replacement = '', x = pos)
+  # pos = gsub(pattern = '\\*$', replacement = '', x = pos) #Remove * if nonsense mutation ends with *
+  # pos = gsub(pattern = '^\\*', replacement = '', x = pos) #Remove * if nonsense mutation starts with *
+  # pos = gsub(pattern = '\\*.*', replacement = '', x = pos) #Remove * followed by position e.g, p.C229Lfs*18
 
-  pos = suppressWarnings( as.numeric(sapply(strsplit(x = pos, split = '_', fixed = TRUE), '[', 1)) )
+  # pos = suppressWarnings( as.numeric(sapply(strsplit(x = pos, split = '_', fixed = TRUE), '[', 1)) )
+
+  # as some HGVSp will use "=", above code will introduce NA value for these
+  # items 
+  pos = str_match(all.prot.dat$conv, "p\\.[[:alpha:]]*(\\d)+")
+  pos = pos[, 2L, drop = TRUE]
   all.prot.dat[,pos := pos]
 
   all.prot.dat = all.prot.dat[!is.na(pos)] #Remove NA's
@@ -195,3 +200,17 @@ cluster_prot = function(prot.dat, gene, th, protLen){
 }
 
 # -------------------End of clustering function-------------------
+
+str_match <- function(string, pattern, ignore.case = FALSE) {
+    out <- regmatches(
+        string,
+        regexec(pattern, string,
+            perl = TRUE, fixed = FALSE,
+            ignore.case = ignore.case
+        ),
+        invert = FALSE
+    )
+    out <- do.call("rbind", out)
+    out[out == ""] <- NA_character_
+    out
+}
