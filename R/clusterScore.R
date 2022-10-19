@@ -27,11 +27,11 @@ parse_prot = function(dat, AACol, gl, m, calBg = FALSE, nBg){
   all.prot.dat = dat[,.(Hugo_Symbol, Variant_Classification, AAChange)]
   all.prot.dat = all.prot.dat[Variant_Classification != 'Splice_Site']
   #parse AAchanges to get postion
-  prot.spl = strsplit(x = as.character(all.prot.dat$AAChange), split = '.', fixed = TRUE)
-  prot.conv = sapply(sapply(prot.spl, function(x) x[length(x)]), '[', 1)
+  # prot.spl = strsplit(x = as.character(all.prot.dat$AAChange), split = '.', fixed = TRUE)
+  # prot.conv = sapply(sapply(prot.spl, function(x) x[length(x)]), '[', 1)
 
-  all.prot.dat[,conv := prot.conv]
-  all.prot.dat = all.prot.dat[!conv == 'NULL']
+  # all.prot.dat[,conv := prot.conv]
+  # all.prot.dat = all.prot.dat[!conv == 'NULL']
 
   #If conversions are in HGVSp_long (default HGVSp) format, we will remove strings Ter followed by anything (e.g; p.Asn1986GlnfsTer13)
   # pos = gsub(pattern = 'Ter.*', replacement = '',x = all.prot.dat$conv)
@@ -44,11 +44,12 @@ parse_prot = function(dat, AACol, gl, m, calBg = FALSE, nBg){
 
   # pos = suppressWarnings( as.numeric(sapply(strsplit(x = pos, split = '_', fixed = TRUE), '[', 1)) )
 
-  # as some HGVSp will use "=", above code will introduce NA value for these
-  # items 
-  pos = str_match(all.prot.dat$conv, "p\\.[[:alpha:]]*(\\d)+")
-  pos = pos[, 2L, drop = TRUE]
-  all.prot.dat[,pos := pos]
+  # as some HGVSp will use "=", above code will introduce NA value for these items 
+
+  all.prot.dat[, pos := str_match(
+    as.character(all.prot.dat$AAChange),
+    "p\\.[[:alpha:]]*(\\d+)"
+  )[, 2L, drop = TRUE]]
 
   all.prot.dat = all.prot.dat[!is.na(pos)] #Remove NA's
 
@@ -210,6 +211,9 @@ str_match <- function(string, pattern, ignore.case = FALSE) {
         ),
         invert = FALSE
     )
+    out <- lapply(out, function(x) {
+      if (!length(x)) "" else x
+    })
     out <- do.call("rbind", out)
     out[out == ""] <- NA_character_
     out
