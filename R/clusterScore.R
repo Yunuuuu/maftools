@@ -47,10 +47,10 @@ parse_prot = function(dat, AACol, gl, m, calBg = FALSE, nBg){
   # as some HGVSp will use "=", above code will introduce NA value for these items 
 
   all.prot.dat[, pos := str_match(
-    as.character(all.prot.dat$AAChange),
+    as.character(AAChange),
     "p\\.[[:alpha:]]*(\\d+)"
   )[, 2L, drop = TRUE]]
-
+  all.prot.dat[, pos := as.numeric(pos)]
   all.prot.dat = all.prot.dat[!is.na(pos)] #Remove NA's
 
   gene.sum = summarizeMaf(maf = dat, chatty = FALSE)$gene.summary
