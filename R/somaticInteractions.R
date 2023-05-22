@@ -10,6 +10,8 @@
 #' @param pvalue Default c(0.05, 0.01) p-value threshold. You can provide two values for upper and lower threshold.
 #' @param returnAll If TRUE returns test statistics for all pair of tested genes. Default FALSE, returns for only genes below pvalue threshold.
 #' @param fontSize cex for gene names. Default 0.8
+#' @param leftMar Left margin. Default 4
+#' @param topMar Top margin. Default 4
 #' @param showSigSymbols Default TRUE. Heighlight significant pairs
 #' @param showCounts Default TRUE. Include number of events in the plot
 #' @param countStats Default `all`. Can be `all` or `sig`
@@ -17,6 +19,7 @@
 #' @param countsFontSize Default 0.8
 #' @param countsFontColor Default `black`
 #' @param colPal colPalBrewer palettes. See RColorBrewer::display.brewer.all() for details
+#' @param revPal Reverse the color palette. Default FALSE
 #' @param showSum show [sum] with gene names in plot, Default TRUE
 #' @param plotPadj Plot adj. p-values instead
 #' @param colNC Number of different colors in the palette, minimum 3, default 9
@@ -33,9 +36,9 @@
 #' @export
 
 somaticInteractions = function(maf, top = 25, genes = NULL, pvalue = c(0.05, 0.01), returnAll = TRUE,
-                               geneOrder = NULL, fontSize = 0.8, showSigSymbols = TRUE,
+                               geneOrder = NULL, fontSize = 0.8, leftMar = 4, topMar = 4, showSigSymbols = TRUE,
                                showCounts = FALSE, countStats = 'all', countType = 'all',
-                               countsFontSize = 0.8, countsFontColor = "black", colPal = "BrBG", showSum = TRUE, plotPadj = FALSE, colNC=9, nShiftSymbols = 5, sigSymbolsSize=2,sigSymbolsFontSize=0.9, pvSymbols = c(46,42), limitColorBreaks = TRUE){
+                               countsFontSize = 0.8, countsFontColor = "black", colPal = "BrBG", revPal = FALSE, showSum = TRUE, plotPadj = FALSE, colNC=9, nShiftSymbols = 5, sigSymbolsSize=2,sigSymbolsFontSize=0.9, pvSymbols = c(46,42), limitColorBreaks = TRUE){
   #browser()
   if(is.null(genes)){
     genes = getGeneSummary(x = maf)[1:top, Hugo_Symbol]
@@ -63,9 +66,43 @@ somaticInteractions = function(maf, top = 25, genes = NULL, pvalue = c(0.05, 0.0
     mutMat = rbind(mutMat, missing.tsbs)
   }
 
+  #return(mutMat)
+
   #pairwise fisher test source code borrowed from: https://www.nature.com/articles/ncomms6901
-  interactions = sapply(1:ncol(mutMat), function(i) sapply(1:ncol(mutMat), function(j) {f<- try(fisher.test(mutMat[,i], mutMat[,j]), silent=TRUE); if(class(f)=="try-error") NA else ifelse(f$estimate>1, -log10(f$p.val),log10(f$p.val))} ))
-  oddsRatio <- oddsGenes <- sapply(1:ncol(mutMat), function(i) sapply(1:ncol(mutMat), function(j) {f<- try(fisher.test(mutMat[,i], mutMat[,j]), silent=TRUE); if(class(f)=="try-error") f=NA else f$estimate} ))
+  interactions = sapply(1:ncol(mutMat), function(i)
+    sapply(1:ncol(mutMat), function(j) {
+      f = try(fisher.test(mutMat[, i], mutMat[, j]), silent = TRUE)
+      if (class(f) == "try-error"){
+        if(all(mutMat[,i] == mutMat[,j])){
+          if(colnames(mutMat)[i] != colnames(mutMat)[j]){
+            warning("All the samples are in the same direction for the genes ", colnames(mutMat)[i], " and ",  colnames(mutMat)[j], "! Could not perform Fisher test.")
+          }
+          NA
+        }else{
+          if(colnames(mutMat)[i] != colnames(mutMat)[j]){
+            warning("Contigency table could not created for the genes ", colnames(mutMat)[i], " and ",  colnames(mutMat)[j], "! Could not perform Fisher test.")
+          }
+          NA
+        }
+      }else{
+        ifelse(f$estimate > 1,-log10(f$p.val), log10(f$p.val))
+      }
+    }))
+  #return(interactions)
+  oddsRatio <-
+    oddsGenes <-
+    sapply(1:ncol(mutMat), function(i)
+      sapply(1:ncol(mutMat), function(j) {
+        f = try(fisher.test(mutMat[, i], mutMat[, j]), silent = TRUE)
+        if (class(f) == "try-error")
+          if(all(mutMat[,i] == mutMat[,j])){
+            NA
+          }else{
+            NA
+          }
+        else
+          f$estimate
+      }))
   rownames(interactions) = colnames(interactions) = rownames(oddsRatio) = colnames(oddsRatio) = colnames(mutMat)
 
   sigPairs = which(x = 10^-abs(interactions) < 1, arr.ind = TRUE)
@@ -81,7 +118,8 @@ somaticInteractions = function(maf, top = 25, genes = NULL, pvalue = c(0.05, 0.0
                                   x = sigPairs[i,]
                                   g1 = rownames(interactions[x[1], x[2], drop = FALSE])
                                   g2 = colnames(interactions[x[1], x[2], drop = FALSE])
-                                  tbl = as.data.frame(table(apply(X = mutMat[,c(g1, g2), drop = FALSE], 1, paste, collapse = "")))
+                                  #tbl = as.data.frame(table(apply(X = mutMat[,c(g1, g2), drop = FALSE], 1, paste, collapse = "")))
+                                  tbl = as.data.frame(table(factor(apply(X = mutMat[,c(g1, g2), drop = FALSE], 1, paste, collapse = ""), levels = c("00", "01","11", "10"))))
                                   combn = data.frame(t(tbl$Freq))
                                   colnames(combn) = tbl$Var1
                                   pval = 10^-abs(interactions[x[1], x[2]])
@@ -122,6 +160,9 @@ somaticInteractions = function(maf, top = 25, genes = NULL, pvalue = c(0.05, 0.0
 
 
     col_pal = RColorBrewer::brewer.pal(9, colPal)
+    if(revPal){
+      col_pal = rev(col_pal)
+    }
     col_pal = grDevices::colorRampPalette(colors = col_pal)
     col_pal = col_pal(m*n-1)
 
@@ -148,7 +189,7 @@ somaticInteractions = function(maf, top = 25, genes = NULL, pvalue = c(0.05, 0.0
       rownames(gene_sum) = paste0(apply(gene_sum, 1, paste, collapse = ' ['), ']')
     }
 
-    par(bty="n", mar = c(1, 4, 4, 2)+.1, las=2, fig = c(0, 1, 0, 1))
+    par(bty="n", mar = c(1, leftMar, topMar, 2)+.1, las=2, fig = c(0, 1, 0, 1))
 
     # adjust breaks for colors according to predefined legend values
     breaks = NA

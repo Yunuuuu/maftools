@@ -12,6 +12,8 @@ somaticInteractions(
   returnAll = TRUE,
   geneOrder = NULL,
   fontSize = 0.8,
+  leftMar = 4,
+  topMar = 4,
   showSigSymbols = TRUE,
   showCounts = FALSE,
   countStats = "all",
@@ -19,6 +21,7 @@ somaticInteractions(
   countsFontSize = 0.8,
   countsFontColor = "black",
   colPal = "BrBG",
+  revPal = FALSE,
   showSum = TRUE,
   plotPadj = FALSE,
   colNC = 9,
@@ -44,6 +47,10 @@ somaticInteractions(
 
 \item{fontSize}{cex for gene names. Default 0.8}
 
+\item{leftMar}{Left margin. Default 4}
+
+\item{topMar}{Top margin. Default 4}
+
 \item{showSigSymbols}{Default TRUE. Heighlight significant pairs}
 
 \item{showCounts}{Default TRUE. Include number of events in the plot}
@@ -57,6 +64,8 @@ somaticInteractions(
 \item{countsFontColor}{Default `black`}
 
 \item{colPal}{colPalBrewer palettes. See RColorBrewer::display.brewer.all() for details}
+
+\item{revPal}{Reverse the color palette. Default FALSE}
 
 \item{showSum}{show [sum] with gene names in plot, Default TRUE}
 

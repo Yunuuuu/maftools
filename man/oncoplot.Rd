@@ -14,9 +14,16 @@ oncoplot(
   drawColBar = TRUE,
   leftBarData = NULL,
   leftBarLims = NULL,
+  leftBarVline = NULL,
+  leftBarVlineCol = "gray70",
   rightBarData = NULL,
   rightBarLims = NULL,
+  rightBarVline = NULL,
+  rightBarVlineCol = "gray70",
   topBarData = NULL,
+  topBarLims = NULL,
+  topBarHline = NULL,
+  topBarHlineCol = "gray70",
   logColBar = FALSE,
   includeColBarCN = TRUE,
   clinicalFeatures = NULL,
@@ -25,6 +32,7 @@ oncoplot(
   pathways = NULL,
   path_order = NULL,
   selectedPathways = NULL,
+  showOnlyPathway = FALSE,
   pwLineCol = "#535c68",
   pwLineWd = 1,
   draw_titv = FALSE,
@@ -90,11 +98,25 @@ oncoplot(
 
 \item{leftBarLims}{limits for `leftBarData`. Default `NULL`.}
 
+\item{leftBarVline}{Draw vertical lines at these values. Default `NULL`.}
+
+\item{leftBarVlineCol}{Line color for `leftBarVline` Default gray70}
+
 \item{rightBarData}{Data for rightside barplot. Must be a data.frame with two columns containing to gene names and values. Default `NULL` which draws distibution by variant classification. This option is applicable when only `drawRowBar` is TRUE.}
 
 \item{rightBarLims}{limits for `rightBarData`. Default `NULL`.}
 
+\item{rightBarVline}{Draw vertical lines at these values. Default `NULL`.}
+
+\item{rightBarVlineCol}{Line color for `rightBarVline` Default gray70}
+
 \item{topBarData}{Default `NULL` which draws absolute number of mutation load for each sample. Can be overridden by choosing one clinical indicator(Numeric) or by providing a two column data.frame contaning sample names and values for each sample. This option is applicable when only `drawColBar` is TRUE.}
+
+\item{topBarLims}{limits for `topBarData`. Default `NULL`.}
+
+\item{topBarHline}{Draw horizontal lines at these values. Default `NULL`.}
+
+\item{topBarHlineCol}{Line color for `topBarHline.` Default gray70}
 
 \item{logColBar}{Plot top bar plot on log10 scale. Default \code{FALSE}.}
 
@@ -112,6 +134,8 @@ You can specify which columns to be drawn using `clinicalFeatures` argument.}
 \item{path_order}{Default `NULL` Manually specify the order of pathways}
 
 \item{selectedPathways}{Manually provide the subset of pathway names to be selected from `pathways`. Default NULL. In case `pathways` is `auto` draws top 3 altered pathways.}
+
+\item{showOnlyPathway}{Shows only rows corresponing to the pathways. Default FALSE.}
 
 \item{pwLineCol}{Color for the box around the pathways Default #535c68}
 

@@ -95,7 +95,7 @@ subsetMaf = function(maf, tsb = NULL, genes = NULL, query = NULL, clinQuery = NU
 
   if(!is.null(genes)){
     #message("-subsetting by genes..")
-    genes = as.character(genes)
+    genes = unique(as.character(genes))
     maf.dat = maf.dat[Hugo_Symbol %in% genes, ]
     maf.silent = maf.silent[Hugo_Symbol %in% genes, ]
   }
@@ -168,6 +168,7 @@ subsetMaf = function(maf, tsb = NULL, genes = NULL, query = NULL, clinQuery = NU
       stop("Subsetting has resulted in zero non-synonymous variants!")
     }
 
+    #return(list(nonSyn = maf.dat, syn = maf.silent, clinicalData = maf.anno))
     m = MAF(nonSyn = maf.dat, syn = maf.silent, clinicalData = maf.anno)
 
     # mafSummary = summarizeMaf(maf.dat, chatty = FALSE, anno = maf.anno)

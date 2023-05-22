@@ -15,9 +15,16 @@
 #' @param drawRowBar logical. Plots righ barplot for each gene. Default \code{TRUE}.
 #' @param leftBarData Data for leftside barplot. Must be a data.frame with two columns containing gene names and values. Default `NULL`
 #' @param leftBarLims limits for `leftBarData`. Default `NULL`.
+#' @param leftBarVline Draw vertical lines at these values. Default `NULL`.
+#' @param leftBarVlineCol Line color for `leftBarVline` Default gray70
 #' @param topBarData Default `NULL` which draws absolute number of mutation load for each sample. Can be overridden by choosing one clinical indicator(Numeric) or by providing a two column data.frame contaning sample names and values for each sample. This option is applicable when only `drawColBar` is TRUE.
+#' @param topBarLims limits for `topBarData`. Default `NULL`.
+#' @param topBarHline Draw horizontal lines at these values. Default `NULL`.
+#' @param topBarHlineCol Line color for `topBarHline.` Default gray70
 #' @param rightBarData Data for rightside barplot. Must be a data.frame with two columns containing to gene names and values. Default `NULL` which draws distibution by variant classification. This option is applicable when only `drawRowBar` is TRUE.
 #' @param rightBarLims limits for `rightBarData`. Default `NULL`.
+#' @param rightBarVline Draw vertical lines at these values. Default `NULL`.
+#' @param rightBarVlineCol Line color for `rightBarVline` Default gray70
 #' @param logColBar Plot top bar plot on log10 scale. Default \code{FALSE}.
 #' @param includeColBarCN Whether to include CN in column bar plot. Default TRUE
 #' @param clinicalFeatures columns names from `clinical.data` slot of \code{MAF} to be drawn in the plot. Dafault NULL.
@@ -27,6 +34,7 @@
 #' @param pathways Default `NULL`. Can be `auto`, or a two column data.frame/tsv-file with genes and correspoding pathway mappings.`
 #' @param path_order Default `NULL` Manually specify the order of pathways
 #' @param selectedPathways Manually provide the subset of pathway names to be selected from `pathways`. Default NULL. In case `pathways` is `auto` draws top 3 altered pathways.
+#' @param showOnlyPathway Shows only rows corresponing to the pathways. Default FALSE.
 #' @param pwLineCol Color for the box around the pathways Default #535c68
 #' @param pwLineWd Line width for the box around the pathways Default Default 1
 #' @param draw_titv logical Includes TiTv plot. \code{FALSE}
@@ -91,11 +99,11 @@
 #' @export
 oncoplot = oncoplot = function(maf, top = 20, minMut = NULL, genes = NULL, altered = FALSE,
                                drawRowBar = TRUE, drawColBar = TRUE,
-                               leftBarData = NULL, leftBarLims = NULL,
-                               rightBarData = NULL, rightBarLims = NULL,
-                               topBarData = NULL, logColBar = FALSE, includeColBarCN = TRUE,
+                               leftBarData = NULL, leftBarLims = NULL, leftBarVline = NULL, leftBarVlineCol = 'gray70',
+                               rightBarData = NULL, rightBarLims = NULL,rightBarVline = NULL, rightBarVlineCol = 'gray70',
+                               topBarData = NULL, topBarLims = NULL, topBarHline = NULL, topBarHlineCol = 'gray70', logColBar = FALSE, includeColBarCN = TRUE,
                                clinicalFeatures = NULL, annotationColor = NULL, annotationDat = NULL,
-                               pathways = NULL, path_order = NULL, selectedPathways = NULL, pwLineCol = "#535c68", pwLineWd = 1, draw_titv = FALSE, titv_col = NULL,
+                               pathways = NULL, path_order = NULL, selectedPathways = NULL, showOnlyPathway = FALSE, pwLineCol = "#535c68", pwLineWd = 1, draw_titv = FALSE, titv_col = NULL,
                                showTumorSampleBarcodes = FALSE, barcode_mar = 4, barcodeSrt = 90, gene_mar = 5,
                                anno_height = 1, legend_height = 4,
                                sortByAnnotation = FALSE, groupAnnotationBySize = TRUE, annotationOrder = NULL,
@@ -115,6 +123,7 @@ oncoplot = oncoplot = function(maf, top = 20, minMut = NULL, genes = NULL, alter
   }
 
   if(!is.null(genes)){ #If user provides a gene list
+    genes = unique(as.character(genes))
     om = createOncoMatrix(m = maf, g = genes, add_missing = fill, cbio = cBioPortal)
     numMat = om$numericMatrix
     mat_origin = om$oncoMatrix
@@ -393,7 +402,13 @@ oncoplot = oncoplot = function(maf, top = 20, minMut = NULL, genes = NULL, alter
     mat_origin_path[mat_origin_path == 0] = ""
     mat_origin_path[mat_origin_path == "99"] = "pathway"
     mat_origin_path = mat_origin_path[,colnames(mat_origin), drop = FALSE]
-    mat_origin = rbind(mat_origin, mat_origin_path)
+    if(showOnlyPathway){
+      mat_origin = mat_origin_path
+      numMat = numMat[rownames(mat_origin),, drop = FALSE]
+    }else{
+      mat_origin = rbind(mat_origin, mat_origin_path)
+    }
+
     mat_origin = mat_origin[rownames(numMat), colnames(numMat), drop = FALSE]
   }
 
@@ -452,22 +467,29 @@ oncoplot = oncoplot = function(maf, top = 20, minMut = NULL, genes = NULL, alter
       top_bar_data[is.infinite(top_bar_data)] = 0
     }
 
-    plot(x = NA, y = NA, type = "n", xlim = c(0,ncol(top_bar_data)), ylim = c(0, max(colSums(x = top_bar_data, na.rm = TRUE))),
+    if(is.null(topBarLims)){
+      topBarLims = round(c(0, max(colSums(x = top_bar_data, na.rm = TRUE))), digits = 2)
+    }
+
+    plot(x = NA, y = NA, type = "n", xlim = c(0,ncol(top_bar_data)), ylim = topBarLims,
          axes = FALSE, frame.plot = FALSE, xlab = NA, ylab = NA, xaxs = "i")
-    axis(side = 2, at = c(0, round(max(colSums(top_bar_data, na.rm = TRUE)))), las = 2, line = 0.5)
+    axis(side = 2, at = c(0, max(topBarLims, na.rm = TRUE)), las = 2, line = 0.5)
     for(i in 1:ncol(top_bar_data)){
       x = top_bar_data[,i]
       names(x) = rownames(top_bar_data)
       x = x[!x == 0]
       if(length(x) > 0){
         rect(xleft = i-1, ybottom = c(0, cumsum(x)[1:(length(x)-1)]), xright = i-0.1,
-             ytop = cumsum(x), col = vc_col[names(x)], border = NA, lwd = 0)
+             ytop = cumsum(x), col = vc_col[names(x)], border = NA, lwd = 0, xpd = FALSE)
       }
     }
     if(logColBar){
       mtext(text = "(log10)", side = 2, line = 2, cex = 0.6)
     }else{
       mtext(text = "TMB", side = 2, line = 2, cex = 0.6)
+    }
+    if(!is.null(topBarHline)){
+      abline(h = topBarHline, lty = 2, col = topBarHlineCol, xpd = FALSE)
     }
   }else if(!is.null(topBarData) & drawColBar){
     # Draw extra clinical data in top
@@ -500,15 +522,22 @@ oncoplot = oncoplot = function(maf, top = 20, minMut = NULL, genes = NULL, alter
 
     extdata <- extdata[colnames(top_bar_data),]
 
-    plot(x = NA, y = NA, type = "n", xlim = c(0,nrow(extdata)), ylim = range(extdata[,"barheights"], na.rm = TRUE),
+    if(is.null(topBarLims)){
+      topBarLims = round(range(extdata[,"barheights"], na.rm = TRUE), digits = 2)
+    }
+
+    plot(x = NA, y = NA, type = "n", xlim = c(0,nrow(extdata)), ylim = topBarLims,
          axes = FALSE, frame.plot = FALSE, xlab = NA, ylab = NA, xaxs = "i")
-    axis(side = 2, at = round(range(extdata[,"barheights"], na.rm = TRUE)), las = 2, line = 0.5)
+    axis(side = 2, at = topBarLims, las = 2, line = 0.5)
 
     for(i in 1:nrow(extdata)){
       graphics::rect(xleft = i-1, xright = i-0.1, ybottom = 0, ytop = as.numeric(extdata[i, "barheights"]),
-                     col = "#535c68", border = NA, lwd = 0)
+                     col = "#535c68", border = NA, lwd = 0, xpd = FALSE)
     }
     title(ylab = topbar_title, font = 1, cex.lab = legendFontSize, xpd = TRUE)
+    if(!is.null(topBarHline)){
+      abline(h = topBarHline, lty = 2, col = topBarHlineCol)
+    }
   }
 
   #03: Draw scale for right barplot
@@ -584,6 +613,9 @@ oncoplot = oncoplot = function(maf, top = 20, minMut = NULL, genes = NULL, alter
     }
     axis(side = 3, at = rev(-exprs_bar_lims), outer = FALSE, line = 0.25, labels = rev(exprs_bar_lims))
     mtext(text = leftBarTitle, side = 3, line = 0.50, cex = 0.6)
+    if(!is.null(leftBarVline)){
+      abline(h = leftBarVline, lty = 2, col = leftBarVlineCol, xpd = FALSE)
+    }
   }
 
   #04: Draw the main matrix
@@ -847,6 +879,9 @@ oncoplot = oncoplot = function(maf, top = 20, minMut = NULL, genes = NULL, alter
                xright = cumsum(x), col = vc_col[vc_codes[names(x)]], border = NA, lwd = 0)
         }
       }
+      if(!is.null(rightBarVline)){
+        abline(v = rightBarVline, lty = 2, col = rightBarVlineCol, xpd = FALSE)
+      }
       axis(side = 3, at = side_bar_lims, outer = FALSE, line = 0.25)
       mtext(text = rightBarTitle, side = 3, line = 0.5, cex = 0.6)
     }else{
@@ -857,6 +892,9 @@ oncoplot = oncoplot = function(maf, top = 20, minMut = NULL, genes = NULL, alter
         x = rev(rightBarData$exprn)[i]
         rect(ybottom = i-1, xleft = x, ytop = i-0.1,
              xright = 0, col = "#535c68", border = NA, lwd = 0)
+      }
+      if(!is.null(rightBarVline)){
+        abline(v = rightBarVline, lty = 2, col = rightBarVlineCol, xpd = FALSE)
       }
       axis(side = 3, at = side_bar_lims, outer = FALSE, line = 0.25)
       mtext(text = rightBarTitle, side = 3, line = 0.5, cex = 0.6)
@@ -1056,6 +1094,9 @@ oncoplot = oncoplot = function(maf, top = 20, minMut = NULL, genes = NULL, alter
     }
   }
 
+  if(showOnlyPathway){
+    leg_classes = leg_classes['pathway']
+  }
   lep = legend("topleft", legend = names(leg_classes),
                col = leg_classes, border = NA, bty = "n",
                ncol= 2, pch = leg_classes_pch, xpd = TRUE, xjust = 0, yjust = 0, cex = legendFontSize)
