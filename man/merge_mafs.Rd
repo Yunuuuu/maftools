@@ -4,7 +4,7 @@
 \alias{merge_mafs}
 \title{Merge multiple mafs into single MAF}
 \usage{
-merge_mafs(mafs, verbose = TRUE, ...)
+merge_mafs(mafs, verbose = TRUE, ..., idcol = TRUE)
 }
 \arguments{
 \item{mafs}{a list of \code{\link{MAF}} objects or data.frames or paths to MAF files.}
@@ -12,6 +12,13 @@ merge_mafs(mafs, verbose = TRUE, ...)
 \item{verbose}{Default TRUE}
 
 \item{...}{additional arguments passed \code{\link{read.maf}}}
+
+\item{idcol}{Creates a column in the \code{clinicalData} showing which list
+item those rows came from. \code{TRUE} names this column \code{".id"}.
+\code{idcol="file"} names this column \code{"file"}. If the input list has
+names, those names are the values placed in this id column, otherwise the
+values are an integer vector \code{1:length(mafs)}. Only used when
+\code{mafs} is a list of \code{\link{MAF}} objects.}
 }
 \value{
 \code{\link{MAF}} object

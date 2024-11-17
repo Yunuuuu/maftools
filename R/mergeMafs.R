@@ -3,10 +3,16 @@
 #' @param mafs a list of \code{\link{MAF}} objects or data.frames or paths to MAF files.
 #' @param verbose Default TRUE
 #' @param ... additional arguments passed \code{\link{read.maf}}
+#' @param idcol Creates a column in the \code{clinicalData} showing which list
+#' item those rows came from. \code{TRUE} names this column \code{".id"}.
+#' \code{idcol="file"} names this column \code{"file"}. If the input list has
+#' names, those names are the values placed in this id column, otherwise the
+#' values are an integer vector \code{1:length(mafs)}. Only used when
+#' \code{mafs} is a list of \code{\link{MAF}} objects.
 #' @return \code{\link{MAF}} object
 #' @export
 #'
-merge_mafs = function(mafs, verbose = TRUE, ...){
+merge_mafs = function(mafs, verbose = TRUE, ..., idcol = TRUE){
 
   if(all(unlist(lapply(mafs, is, "MAF")))){
 
@@ -21,7 +27,7 @@ merge_mafs = function(mafs, verbose = TRUE, ...){
     mafs_clin = lapply(mafs, function(m) {
       m@clinical.data
     })
-    mafs_clin = data.table::rbindlist(l = mafs_clin, fill = TRUE, use.names = TRUE)
+    mafs_clin = data.table::rbindlist(l = mafs_clin, fill = TRUE, use.names = TRUE, idcol = idcol)
     maf = read.maf(maf = mafs_dat, clinicalData = mafs_clin, verbose = verbose, ...)
   }else if(all(unlist(lapply(mafs, is, "data.frame")))){
     if(verbose){
